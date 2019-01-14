@@ -70,6 +70,7 @@ class HyperpeerServer extends WebSocket.Server {
         ws.send(JSON.stringify({ type: 'error', code: 3002, message: e.toString() }));
         return;
       }
+      if (!message.type) message.type = 'signal';
       console.log('Message from peer ' + peerId + '. Type: ' + message.type);
       if (message.type === 'listPeers') {
         ws.send(JSON.stringify({ type: 'peers', peers: this.getPeers() }));

@@ -64,7 +64,7 @@ describe('hpServer', () => {
         return;
       }
       expect(message.type).to.equal('peers');
-      expect(message.peers).to.an.instanceof(Array);
+      expect(message.peers).to.be.an.instanceof(Array);
       expect(message.peers).to.have.lengthOf(2);
       done();
     }
@@ -99,7 +99,7 @@ describe('hpServer', () => {
       if (message.type === 'status') {
         expect(message.status).to.equal('paired');
         ws1.send(JSON.stringify({ type: 'offer', sdp: 'test' }));
-      } else if (message.type === 'answer') {
+      } else if (message.type === 'signal') {
         expect(message.ice).to.equal('test');
         done();
       }
@@ -112,9 +112,11 @@ describe('hpServer', () => {
         done(e)
         return;
       }
-      if (message.type === 'offer') {
+      if(message.type === 'status') {
+        expect(message.status).to.equal('paired');
+      } else if (message.type === 'offer') {
         expect(message.sdp).to.equal('test');
-        ws2.send(JSON.stringify({ type: 'answer', ice: 'test' }))
+        ws2.send(JSON.stringify({ ice: 'test' }))
       }
     });
     let onError = function (error) {

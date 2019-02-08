@@ -99,7 +99,7 @@ describe('hpServer', () => {
       if (message.type === 'status') {
         expect(message.status).to.equal('paired');
         ws1.send(JSON.stringify({ type: 'offer', sdp: 'test' }));
-      } else if (message.type === 'signal') {
+      } else if (message.ice) {
         expect(message.ice).to.equal('test');
         done();
       }

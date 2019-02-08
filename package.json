@@ -1,10 +1,11 @@
 {
   "name": "hyperpeer-node",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Hyperpeer signaling server for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "doc": "jsdoc2md -t jsdoc2md/README.hbs index.js > README.md"
   },
   "author": "Jose F. Saenz-Cogollo",
   "license": "ISC",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "jsdoc-to-markdown": "^4.0.1",
     "mocha": "^5.2.0"
   }
 }

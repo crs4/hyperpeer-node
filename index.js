@@ -1,28 +1,59 @@
-#!/usr/bin / env node
 
 const WebSocket = require('ws');
 const url = require("url");
 const UrlPattern = require('url-pattern');
 
+/**
+ * Represent the peers connected to the server
+ * 
+ * @private
+ * @class Peer
+ */
 class Peer {
+  /**
+   * Creates an instance of Peer.
+   * @param {*} type
+   * @param {*} id
+   * @param {*} ws
+   * @memberof Peer
+   */
   constructor(type, id, ws) {
     this.type = type;
     this.id = id;
     this.ws = ws;
     this.remotePeerId = undefined;
   }
-
+  /**
+   * Send a message to the peer
+   *
+   * @param {any} message - Message to send
+   * @memberof Peer
+   */
   send(message) {
     if (this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     }
   }
 
+  /**
+   * Set the id of the paired remote peer
+   *
+   * @param {*} id
+   * @memberof Peer
+   */
   setRemotePeerId(id) {
     this.remotePeerId = id;
   }
 }
 
+/**
+ * Creates an instance of HyperpeerServer which is a wrapper of the {@link https://github.com/websockets/ws/blob/HEAD/doc/ws.md|WebSocket.Server} class. HyperpeerServer instances manages the connection of peers, the pairing between peers, and relay messages between paired peers.
+ *
+ * @class HyperpeerServer
+ * @extends {WebSocket.Server}
+ * @param {object} options - Websocket server options (see {@link https://github.com/websockets/ws/blob/HEAD/doc/ws.md| ws API})
+ * @param {HyperpeerServer~verifyPeer} options.verifyPeer - A function that can be used to validate peers. If set, it replaces verifyClient attribute of WebSocket.Server
+ */
 class HyperpeerServer extends WebSocket.Server {
   constructor(options) {
     let urlPattern = new UrlPattern('/:peerType(/:peerId)(/:peerKey)');	
@@ -46,6 +77,14 @@ class HyperpeerServer extends WebSocket.Server {
     this.on('connection', this.onPeerConnection);
   }
   
+  /**
+   * Manages the connection of peers
+   *
+   * @param {*} ws
+   * @param {*} req
+   * @memberof HyperpeerServer
+   * @private
+   */
   onPeerConnection(ws, req) {
     let pathname = url.parse(req.url).pathname;
     let peerCredentials;
@@ -92,6 +131,12 @@ class HyperpeerServer extends WebSocket.Server {
 
   }
 
+  /**
+   * Returns the list of connected peers
+   *
+   * @returns {HyperpeerServer~peer[]}
+   * @memberof HyperpeerServer
+   */
   getPeers() {
     let peers = [];
     for (let peer of this.peers.values()) {
@@ -105,6 +150,14 @@ class HyperpeerServer extends WebSocket.Server {
     return peers;
   }
 
+  /**
+   * Pair two peers
+   *
+   * @param {*} peerId
+   * @param {*} remotePeerId
+   * @memberof HyperpeerServer
+   * @private
+   */
   pair(peerId, remotePeerId) {
     let peer = this.peers.get(peerId);
     if (!this.peers.has(remotePeerId)) {
@@ -128,6 +181,13 @@ class HyperpeerServer extends WebSocket.Server {
     return;
   }
 
+  /**
+   * Unpair paired peers
+   *
+   * @param {*} peerId
+   * @memberof HyperpeerServer
+   * @private
+   */
   unpair(peerId) {
     let peer = this.peers.get(peerId);
     if (peer.remotePeerId) {
@@ -143,6 +203,14 @@ class HyperpeerServer extends WebSocket.Server {
     peer.send({ type: 'status', status: 'unpaired' });
   }
 
+  /**
+   * Forward messages between paired peers
+   *
+   * @param {*} peerId
+   * @param {*} message
+   * @memberof HyperpeerServer
+   * @private
+   */
   forwardMessage(peerId, message) {
     let peer = this.peers.get(peerId);
     if (!peer.remotePeerId) {
@@ -154,4 +222,18 @@ class HyperpeerServer extends WebSocket.Server {
   }
 }
 
+/**
+ * Funcition to verify the connection of a peer
+ * @callback HyperpeerServer~verifyPeer
+ * @param {string} peerType - Can be used to verify the category of the peer
+ * @param {string} peerId - Unique identifier of the peer
+ * @param {string} peerKey - Token that can be used to authenticate and authorize the peer
+ */
+/**
+ * Element of the list of peers.
+ * @typedef {Object} HyperpeerServer~peer
+ * @property {string} id - id of the peer.
+ * @property {string} type - type of the peer.
+ * @property {boolean} busy - Indicates whether the peer is paired with another peer.
+ */
 module.exports = HyperpeerServer;

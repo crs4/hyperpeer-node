@@ -12,9 +12,10 @@ const UrlPattern = require('url-pattern');
 class Peer {
   /**
    * Creates an instance of Peer.
-   * @param {*} type
-   * @param {*} id
-   * @param {*} ws
+   * @param {string} type
+   * @param {string} id
+   * @param {Object} ws
+   * @param {boolean} busy
    * @memberof Peer
    */
   constructor(type, id, ws) {
@@ -22,6 +23,7 @@ class Peer {
     this.id = id;
     this.ws = ws;
     this.remotePeerId = undefined;
+    this.busy = true;
   }
   /**
    * Send a message to the peer
@@ -118,6 +120,8 @@ class HyperpeerServer extends WebSocket.Server {
         this.pair(peerId, message.remotePeerId)
       } else if (message.type === 'unpair') {
         this.unpair(peerId);
+      } else if (message.type === 'ready') {
+        this.notBusy(peerId);
       } else {
         this.forwardMessage(peerId, message);
       }
@@ -143,7 +147,7 @@ class HyperpeerServer extends WebSocket.Server {
       let p = {
         id: peer.id,
         type: peer.type,
-        busy: peer.remotePeerId ? true : false
+        busy: peer.busy
       }
       peers.push(p);
     }
@@ -159,22 +163,24 @@ class HyperpeerServer extends WebSocket.Server {
    * @private
    */
   pair(peerId, remotePeerId) {
-    let peer = this.peers.get(peerId);
+    let peer = this.peers.get(peerId)
     if (!this.peers.has(remotePeerId)) {
-      peer.send({ type: 'error', code: 3003, message: 'Remote peer does not exists!' });
-      return;
+      peer.send({ type: 'error', code: 3003, message: 'Remote peer does not exists!' })
+      return
     }
-    let remotePeer = this.peers.get(remotePeerId);
-    if (remotePeer.remotePeerId) {
-      peer.send({ type: 'error', code: 3004, message: 'Remote peer is busy!' });
-      return;
+    let remotePeer = this.peers.get(remotePeerId)
+    if (remotePeer.busy) {
+      peer.send({ type: 'error', code: 3004, message: 'Remote peer is busy!' })
+      return
     }
     if (peer.remotePeerId) {
-      this.unpair(peerId);
+      this.unpair(peerId)
     }
-    peer.remotePeerId = remotePeerId;
-    this.peers.set(peerId, peer);
-    remotePeer.remotePeerId = peerId;
+    peer.remotePeerId = remotePeerId
+    peer.busy = true
+    this.peers.set(peerId, peer)
+    remotePeer.remotePeerId = peerId
+    remotePeer.busy = true
     this.peers.set(remotePeerId, remotePeer);
     peer.send({ type: 'status', status: 'paired', remotePeerId: remotePeerId });
     remotePeer.send({ type: 'status', status: 'paired', remotePeerId: peerId });
@@ -201,6 +207,19 @@ class HyperpeerServer extends WebSocket.Server {
       this.peers.set(peerId, peer);
     }
     peer.send({ type: 'status', status: 'unpaired' });
+  }
+
+  /**
+   * Set a peer as not busy
+   *
+   * @param {*} peerId
+   * @memberof HyperpeerServer
+   * @private
+   */
+  notBusy(peerId) {
+    let peer = this.peers.get(peerId)
+    peer.busy = false
+    this.peers.set(peerId, peer)
   }
 
   /**

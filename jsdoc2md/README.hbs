@@ -7,18 +7,23 @@ pairing and WebRTC signals exchange of Hyperpeer peers.
 ```js
 const HpServer = require('hyperpeer-node')
 
+// Function used to validate and authorize peers 
 const verifyPeer = function(type, peerId, peerKey) {
     const validTypes = new Set(['client', 'advisor', 'media-server'])
-    const peerIds = new Map([['client01', 'key001'], ['advisor01', key002])
+    const peerIds = new Map([['client01', 'key001'], ['advisor01', 'key002'])
     if (!validTypes.has(type)) return false
     if (!peerIds.has(peerId)) return false
     if (peerKey != peerIds.key(peerId)) return false
-    return true;
+    return true
 }
 
-const hpServer = new HpServer({ port: 3000, verifyPeer: verifyPeer });
-console.log((new Date()) + ' Hyperpeer Server is listening on port 3000');
+// Instantiate the Hyperpeer server by automatically creating an HTTP server
+const hpServer = new HpServer({ port: 3000, verifyPeer: verifyPeer })
 
+// And that's it
+console.log((new Date()) + ' Hyperpeer Server is listening on port 3000')
+
+// Hyperpeer instances are also WebSocket.Server instances so you can listen to its events like the 'connection' event
 hpServer.on('connection', () => {
     const peers = hpServer.getPeers()
     console.log('New peer connection. Connected peers: ' + peers.map((peer) => peer.id))

@@ -66,6 +66,11 @@ describe('hpServer', () => {
       expect(message.type).to.equal('peers');
       expect(message.peers).to.be.an.instanceof(Array);
       expect(message.peers).to.have.lengthOf(2);
+      expect(message.peers[0]).to.have.property('id');
+      expect(message.peers[0]).to.have.property('type');
+      expect(message.peers[0]).to.have.property('busy');
+      expect(message.peers[0].busy).to.be.true;
+      expect(message.peers[1].busy).to.be.true;
       done();
     }
     ws1.on('message', onMessage);
@@ -84,7 +89,10 @@ describe('hpServer', () => {
     let count = 0;
     let onOpen = function () {
       count++;
-      if (count === 2) ws1.send(JSON.stringify({ type: 'pair', remotePeerId: 'id2' }));
+      if (count === 2) {
+        ws2.send(JSON.stringify({ type: 'ready' }));
+        ws1.send(JSON.stringify({ type: 'pair', remotePeerId: 'id2' }));
+      }
     }
     ws1.on('open', onOpen);
     ws2.on('open', onOpen);
@@ -133,7 +141,10 @@ describe('hpServer', () => {
     let count = 0;
     let onOpen = function () {
       count++;
-      if (count === 2) ws1.send(JSON.stringify({ type: 'pair', remotePeerId: 'id2' }));
+      if (count === 2) {
+        ws2.send(JSON.stringify({ type: 'ready' }));
+        ws1.send(JSON.stringify({ type: 'pair', remotePeerId: 'id2' }));
+      }
     }
     ws1.on('open', onOpen);
     ws2.on('open', onOpen);

@@ -93,12 +93,12 @@ class HyperpeerServer extends WebSocket.Server {
     try {
       peerCredentials = this.urlPattern.match(pathname);
     } catch (e) {
-      return ws.close(3000, 'Invalid peer credentials!');
+      return ws.close('ERR_BAD_REQUEST', 'Invalid peer credentials!');
     }
     let { peerType, peerId, peerKey } = peerCredentials;
     if (!peerId) peerId = 'peer' + Date.now();
     if (this.peers.has(peerId)) {
-      return ws.close(3001, 'Peer Id already in use!');
+      return ws.close('ERR_FORBIDDEN', 'Peer Id already in use!');
     }
     this.peers.set(peerId, new Peer(peerType, peerId, ws));
     console.log('Peer %s connected', peerId);
@@ -108,7 +108,7 @@ class HyperpeerServer extends WebSocket.Server {
       try {
         message = JSON.parse(msg);
       } catch (e) {
-        ws.send(JSON.stringify({ type: 'error', code: 3002, message: e.toString() }));
+        ws.send(JSON.stringify({ type: 'error', code: 'ERR_BAD_SIGNAL', message: e.toString() }));
         return;
       }
       console.log('Message from peer ' + peerId + '. Type: ' + message.type);
@@ -165,12 +165,12 @@ class HyperpeerServer extends WebSocket.Server {
   pair(peerId, remotePeerId) {
     let peer = this.peers.get(peerId)
     if (!this.peers.has(remotePeerId)) {
-      peer.send({ type: 'error', code: 3003, message: 'Remote peer does not exists!' })
+      peer.send({ type: 'error', code: 'ERR_PEER_NOT_FOUND', message: 'Remote peer does not exists!' })
       return
     }
     let remotePeer = this.peers.get(remotePeerId)
     if (remotePeer.busy) {
-      peer.send({ type: 'error', code: 3004, message: 'Remote peer is busy!' })
+      peer.send({ type: 'error', code: 'ERR_PEER_BUSY', message: 'Remote peer is busy!' })
       return
     }
     if (peer.remotePeerId) {
@@ -233,7 +233,7 @@ class HyperpeerServer extends WebSocket.Server {
   forwardMessage(peerId, message) {
     let peer = this.peers.get(peerId);
     if (!peer.remotePeerId) {
-      peer.send({ type: 'error', code: 3005, message: 'Cannot forward message to remote peer because peer is not paired!' });
+      peer.send({ type: 'error', code: 'ERR_BAD_STATE', message: 'Cannot forward message to remote peer because peer is not paired!' });
       return;
     }
     let remotePeer = this.peers.get(peer.remotePeerId);

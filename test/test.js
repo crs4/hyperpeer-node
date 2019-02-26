@@ -178,7 +178,7 @@ describe('hpServer', () => {
         expect(message.status).to.equal('unpaired');
         ws2.send(JSON.stringify({ type: 'offer', sdp: 'test' }))
       } else if (message.type === 'error') {
-        expect(message.code).to.equal(3005);
+        expect(message.code).to.equal('ERR_BAD_STATE');
         done();
       }
     });
